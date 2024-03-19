@@ -23,8 +23,8 @@ func main() {
 	// producer和consumer都需要声明exchange, 如果在producer声明，在consumer没声明，先启动consumer的话，会报错
 	// panic: Exception (404) Reason: "NOT_FOUND - no exchange 'exchange-logs' in vhost
 	// 'test-virtual-host-1'"
-	exchangeName := "exchange-logs"
-	exchangeType := "fanout"
+	exchangeName := "exchange-logs2"
+	exchangeType := "direct"
 	err = ch.ExchangeDeclare(
 		exchangeName,
 		exchangeType,
@@ -38,7 +38,7 @@ func main() {
 	}
 
 	queue, err := ch.QueueDeclare(
-		"11111111111", // name为""时，会自动生成一个随机name的queue. 不同name时consumer才会都消费所有消息，相同queue name的consumer会依次消费消息
+		"routing-queue-log-1", // name为""时，会自动生成一个随机name的queue. 不同name时consumer才会都消费所有消息，相同queue name的consumer会依次消费消息
 		false,
 		false,
 		false,
@@ -50,7 +50,7 @@ func main() {
 	// 绑定queue和exchange
 	err = ch.QueueBind(
 		queue.Name,
-		"", // 对 fanout 模式无效
+		"normal-log-3", // 对 fanout 模式无效
 		exchangeName,
 		false,
 		nil)
@@ -61,7 +61,7 @@ func main() {
 	msgs, err := ch.Consume(
 		queue.Name,
 		"consumer-name",
-		false,
+		true,
 		false,
 		false,
 		false,
@@ -74,13 +74,10 @@ func main() {
 	go func() {
 		for msg := range msgs {
 			//go func(msg amqp.Delivery) {
-			log.Printf("11处理任务开始: delivery tag: %d, msg: %s \n", msg.DeliveryTag, msg.Body)
+			log.Printf("处理critical log 任务: delivery tag: %d, msg: %s \n", msg.DeliveryTag, msg.Body)
 			//time.Sleep(5 * time.Second)
 			//log.Printf("处理任务结束: delivery tag: %d, msg: %s \n", msg.DeliveryTag, msg.Body)
-			msg.Ack(false)
-			//if msg.DeliveryTag != 6 {
-			//	msg.Ack(false)
-			//}
+			//msg.Ack(false)
 			//}(msg)
 		}
 	}()

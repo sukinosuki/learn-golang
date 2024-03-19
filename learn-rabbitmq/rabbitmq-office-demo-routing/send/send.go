@@ -22,34 +22,37 @@ func main() {
 		log.Printf("failed to open a channel %s", err)
 	}
 
-	// 声明队列
-	queue, err := ch.QueueDeclare(
-		"hello",
+	exchangeName := "exchange-logs2"
+	exchangeType := "direct"
+	err = ch.ExchangeDeclare(
+		exchangeName,
+		exchangeType,
 		true,
 		false,
 		false,
 		false,
 		nil)
-
 	if err != nil {
 		panic(err)
 	}
-
-	confirms := ch.NotifyPublish(make(chan amqp.Confirmation, 1))
-
-	go func() {
-		for confirm := range confirms {
-			log.Printf("消息发送确认, tag: %d, status: %s\n", confirm.DeliveryTag, confirm.Ack)
-		}
-	}()
-
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 	// 发送消息
-	for i := 0; i < 10; i++ {
-		body := fmt.Sprintf("Hello World! %d", i)
+	for i := 0; i < 20; i++ {
+		body := fmt.Sprintf("log info, %d", i)
 
-		err = ch.PublishWithContext(context.Background(),
-			"",
-			queue.Name,
+		key := "normal-log"
+		//key := "critical-log"
+		//if i >= 10 && i%2 == 0 {
+		//	key = "critical-log"
+		//}
+		//if i < 10 && i%2 == 0 {
+		//	key = "normal-log-2"
+		//}
+		err = ch.PublishWithContext(
+			ctx,
+			exchangeName,
+			key,
 			false,
 			false,
 			amqp.Publishing{
@@ -57,8 +60,8 @@ func main() {
 				Body:        []byte(body),
 				//AppId:         "appid",
 				//UserId:        "admin",
-				MessageId:     "messageid",
-				CorrelationId: "correlationid",
+				//MessageId:     "messageid",
+				//CorrelationId: "correlationid",
 			},
 		)
 		if err != nil {
@@ -67,6 +70,4 @@ func main() {
 	}
 
 	log.Println("send message success")
-
-	time.Sleep(4 * time.Second)
 }

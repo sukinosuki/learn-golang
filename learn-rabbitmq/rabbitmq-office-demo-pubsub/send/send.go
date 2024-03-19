@@ -37,19 +37,55 @@ func main() {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+
+	if err := ch.Confirm(false); err != nil {
+		panic(err)
+	}
+	//confirms := ch.NotifyPublish(make(chan amqp.Confirmation, 1))
+	//
+	//go func() {
+	//	for confirm := range confirms {
+	//		if confirm.Ack {
+	//			fmt.Printf("confirmed delivery with delivery tag: %d \n", confirm.DeliveryTag)
+	//		} else {
+	//			fmt.Printf("confirmed delivery of delivery tag: %d \n", confirm.DeliveryTag)
+	//		}
+	//	}
+	//}()
 	// 发送消息
 	for i := 0; i < 10; i++ {
 		body := fmt.Sprintf("log info, %d", i)
 
-		err = ch.PublishWithContext(
+		//ch.Tx()
+		//err = ch.PublishWithContext(
+		//	ctx,
+		//	exchangeName,
+		//	"",
+		//	false,
+		//	false,
+		//	amqp.Publishing{
+		//		ContentType:  "text/plain",
+		//		Body:         []byte(body),
+		//		DeliveryMode: amqp.Persistent,
+		//		//AppId:         "appid",
+		//		//UserId:        "admin",
+		//		//MessageId:     "messageid",
+		//		//CorrelationId: "correlationid",
+		//	},
+		//)
+
+		//ch.TxCommit()
+		deferredConfirmation, err := ch.PublishWithDeferredConfirmWithContext(
 			ctx,
 			exchangeName,
 			"",
 			false,
 			false,
 			amqp.Publishing{
-				ContentType: "text/plain",
-				Body:        []byte(body),
+				ContentType:  "text/plain",
+				Body:         []byte(body),
+				DeliveryMode: amqp.Persistent,
+				Expiration:   "10000",
 				//AppId:         "appid",
 				//UserId:        "admin",
 				//MessageId:     "messageid",
@@ -59,7 +95,20 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
+		//fmt.Println("deferredConfirmation.DeliveryTag ", deferredConfirmation.DeliveryTag)
+		//fmt.Println("deferredConfirmation.Acked() ", deferredConfirmation.Acked())
+		//done := <-deferredConfirmation.Done()
+		//fmt.Println("done!!!! ", done)
+		//fmt.Println("deferredConfirmation.Acked() ", deferredConfirmation.Acked())
+
+		fmt.Println("deferredConfirmation.Acked() ", deferredConfirmation.Acked())
+		ok := deferredConfirmation.Wait()
+		fmt.Println("deferredConfirmation.Acked() ", deferredConfirmation.Acked())
+		fmt.Println("wait ok: ", ok)
+		time.Sleep(1 * time.Second)
+
 	}
 
 	log.Println("send message success")
+	time.Sleep(2 * time.Second)
 }

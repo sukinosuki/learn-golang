@@ -3,7 +3,6 @@ package main
 import (
 	amqp "github.com/rabbitmq/amqp091-go"
 	"log"
-	"time"
 )
 
 func main() {
@@ -56,7 +55,7 @@ func main() {
 		for msg := range msgs {
 			go func(msg amqp.Delivery) {
 				log.Printf("处理任务开始: delivery tag: %d, msg: %s \n", msg.DeliveryTag, msg.Body)
-				time.Sleep(5 * time.Second)
+				//time.Sleep(5 * time.Second)
 				log.Printf("处理任务结束: delivery tag: %d, msg: %s \n", msg.DeliveryTag, msg.Body)
 				msg.Ack(false)
 			}(msg)
