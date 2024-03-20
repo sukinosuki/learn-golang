@@ -82,6 +82,7 @@ func main() {
 			false,
 			false,
 			amqp.Publishing{
+				Headers:      map[string]interface{}{},
 				ContentType:  "text/plain",
 				Body:         []byte(body),
 				DeliveryMode: amqp.Persistent,
